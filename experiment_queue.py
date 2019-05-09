@@ -24,6 +24,7 @@ import platform
 import threading
 import time
 import sys
+import shutil
 
 from qtutils.qt.QtCore import *
 from qtutils.qt.QtGui import *
@@ -770,11 +771,13 @@ class QueueManager(object):
                 # clean the h5 file:
                 self.clean_h5_file(path, 'temp.h5', repeat_number=repeat_number)
                 try:
-                    os.remove(path)
-                    os.rename('temp.h5', path)
-                except WindowsError if platform.system() == 'Windows' else None:
-                    logger.warning('Couldn\'t delete failed run file %s, another process may be using it. Using alternate filename for second attempt.'%path)
-                    os.rename('temp.h5', path.replace('.h5','_retry.h5'))
+                    shutil.move('temp.h5', path)
+                except Exception:
+                    msg = ('Couldn\'t delete failed run file %s, ' % path + 
+                           'another process may be using it. Using alternate ' 
+                           'filename for second attempt.')
+                    logger.warning(msg, exc_info=True)
+                    shutil.move('temp.h5', path.replace('.h5','_retry.h5'))
                     path = path.replace('.h5','_retry.h5')
                 # Put it back at the start of the queue:
                 self.prepend(path)
@@ -807,8 +810,8 @@ class QueueManager(object):
             # start new try/except block here                   
             try:
                 with h5py.File(path,'r+') as hdf5_file:
-                    self.BLACS.front_panel_settings.store_front_panel_in_h5(hdf5_file,states,tab_positions,window_data,plugin_data,save_conn_table = False)
-                with h5py.File(path,'r+') as hdf5_file:
+                    self.BLACS.front_panel_settings.store_front_panel_in_h5(hdf5_file,states,tab_positions,window_data,plugin_data,save_conn_table=False, save_queue_data=False)
+
                     data_group = hdf5_file['/'].create_group('data')
                     # stamp with the run time of the experiment
                     hdf5_file.attrs['run time'] = time.strftime('%Y%m%dT%H%M%S',run_time)
@@ -871,11 +874,13 @@ class QueueManager(object):
                 # clean the h5 file:
                 self.clean_h5_file(path, 'temp.h5', repeat_number=repeat_number)
                 try:
-                    os.remove(path)
-                    os.rename('temp.h5', path)
-                except WindowsError if platform.system() == 'Windows' else None:
-                    logger.warning('Couldn\'t delete failed run file %s, another process may be using it. Using alternate filename for second attempt.'%path)
-                    os.rename('temp.h5', path.replace('.h5','_retry.h5'))
+                    shutil.move('temp.h5', path)
+                except Exception:
+                    msg = ('Couldn\'t delete failed run file %s, ' % path + 
+                           'another process may be using it. Using alternate ' 
+                           'filename for second attempt.')
+                    logger.warning(msg, exc_info=True)
+                    shutil.move('temp.h5', path.replace('.h5','_retry.h5'))
                     path = path.replace('.h5','_retry.h5')
                 # Put it back at the start of the queue:
                 self.prepend(path)
